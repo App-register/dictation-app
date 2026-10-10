@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/dicto-core",
+    "crates/dicto-gui",
+    "crates/dicto-app",
+]

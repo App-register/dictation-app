@@ -1,0 +1,15 @@
+[package]
+name = "dicto-app"
+version = "0.1.0"
+edition = "2021"
+description = "Dicto — Push-to-talk speech-to-text binary"
+
+[dependencies]
+dicto-core = { path = "../dicto-core" }
+dicto-gui = { path = "../dicto-gui" }
+log = "0.4"
+simple-logger = "4"
+
+[[bin]]
+name = "dicto"
+path = "src/main.rs"
