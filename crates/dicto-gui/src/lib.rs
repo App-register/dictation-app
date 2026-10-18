@@ -1,9 +1,9 @@
-pub mod settings_window;
+pub mod settings;
 pub mod overlay;
-pub mod tray;
-pub mod hotkey_bridge;
+pub mod hotkey;
+pub mod app;
 
-pub use settings_window::SettingsWindow;
+pub use settings::SettingsWindow;
 pub use overlay::RecordingOverlay;
-pub use tray::TrayIcon;
-pub use hotkey_bridge::HotkeyBridge;
+pub use hotkey::HotkeyManager;
+pub use app::AppState;
