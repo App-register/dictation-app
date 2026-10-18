@@ -35,11 +35,8 @@ fn main() {
     let cfg = state.config.lock().unwrap().clone();
     let dict = state.dictionary.lock().unwrap().clone();
 
-    // ── 2. Dictation engine on its own thread (own NWG init + message loop) ──
-    let handler = std::thread::spawn(move || {
-        dictation_loop(cfg, dict);
-    });
-    let _ = handler.join();
+    // ── 2. Dictation engine (same thread, own NWG init for overlay) ──
+    dictation_loop(cfg, dict);
 }
 
 fn dictation_loop(cfg: Config, dict: Dictionary) {
@@ -78,19 +75,13 @@ fn dictation_loop(cfg: Config, dict: Dictionary) {
     let mut capture: Option<AudioCapture> = None;
     let formatting = FormattingEngine::from_config(&cfg);
 
-    // Safe: the overlay lives on THIS thread and is only touched here.
-    #[derive(Copy, Clone)]
-    struct OverlayRef(*const RecordingOverlay);
-    unsafe impl Send for OverlayRef {}
-    let overlay_ref = OverlayRef(&overlay as *const RecordingOverlay);
+    // Raw pointer for overlay access inside the 'static closure
+    let ov_ptr = &overlay as *const RecordingOverlay;
+    let rec = Arc::new(AtomicBool::new(false));
 
-    let recording = Arc::new(AtomicBool::new(false));
-    let rec = recording.clone();
-
-    // Cancel button: stop recording and hide (same thread as overlay)
+    // Cancel button: stop recording and hide
     overlay.on_cancel({
-        let rec = recording.clone();
-        let ov_ptr = overlay_ref.0;
+        let rec = rec.clone();
         move || {
             rec.store(false, Ordering::SeqCst);
             let ov = unsafe { &*ov_ptr };
@@ -116,7 +107,7 @@ fn dictation_loop(cfg: Config, dict: Dictionary) {
             }
             rec.store(true, Ordering::SeqCst);
 
-            let ov = unsafe { &*overlay_ref.0 };
+            let ov = unsafe { &*ov_ptr };
             ov.set_position(ov_x, ov_y);
             ov.show();
             ov.update_text("Recording…");
@@ -146,7 +137,7 @@ fn dictation_loop(cfg: Config, dict: Dictionary) {
             }
             rec.store(false, Ordering::SeqCst);
 
-            let ov = unsafe { &*overlay_ref.0 };
+            let ov = unsafe { &*ov_ptr };
             ov.update_text("Transcribing…");
 
             let samples = match capture.take() {

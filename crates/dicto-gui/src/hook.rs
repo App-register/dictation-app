@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::cell::RefCell;
 use winapi::shared::minwindef::{LPARAM, LRESULT, WPARAM};
 use winapi::um::winuser::{
     CallNextHookEx, DispatchMessageW, GetAsyncKeyState, GetMessageW, SetWindowsHookExW,
@@ -6,12 +6,12 @@ use winapi::um::winuser::{
     WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
 
-type HookFn = Box<dyn FnMut(bool, u32) + Send + 'static>;
+type HookFn = Box<dyn FnMut(bool, u32) + 'static>;
 
-static CALLBACK: Mutex<Option<HookFn>> = Mutex::new(None);
+std::thread_local! {
+    static CALLBACK: RefCell<Option<HookFn>> = const { RefCell::new(None) };
+}
 
-/// Low-level keyboard hook proc. Runs inside the message loop of the
-/// thread that installed the hook. Signature fixed by Windows.
 unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     if code >= 0 {
         let msg = wparam as u32;
@@ -19,23 +19,25 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
             let kbd = lparam as *const KBDLLHOOKSTRUCT;
             let vk = (*kbd).vkCode as u32;
             let is_down = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN;
-            if let Ok(mut guard) = CALLBACK.lock() {
-                if let Some(cb) = guard.as_mut() {
-                    cb(is_down, vk);
+            CALLBACK.with(|cb| {
+                if let Some(f) = cb.borrow_mut().as_mut() {
+                    f(is_down, vk);
                 }
-            }
+            });
         }
     }
     CallNextHookEx(std::ptr::null_mut(), code, wparam, lparam)
 }
 
-/// Install the low-level keyboard hook and run a blocking message loop on
-/// the current thread. The callback fires for every key event with
-/// `(is_down, vk_code)`. This gives us REAL push-to-talk (down + up).
-pub fn run_keyboard_listener<F: FnMut(bool, u32) + Send + 'static>(
+/// Install a low-level keyboard hook and run a blocking message loop on
+/// the CURRENT thread. The callback receives `(is_down, vk_code)`.
+/// No `Send` requirement — everything must live on the calling thread.
+pub fn run_keyboard_listener<F: FnMut(bool, u32) + 'static>(
     callback: F,
 ) -> Result<(), String> {
-    *CALLBACK.lock().unwrap() = Some(Box::new(callback));
+    CALLBACK.with(|cb| {
+        *cb.borrow_mut() = Some(Box::new(callback));
+    });
 
     unsafe {
         let hook = SetWindowsHookExW(
@@ -47,24 +49,21 @@ pub fn run_keyboard_listener<F: FnMut(bool, u32) + Send + 'static>(
         if hook.is_null() {
             return Err("Failed to install keyboard hook".into());
         }
-
         let mut msg: MSG = std::mem::zeroed();
         while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
-
         UnhookWindowsHookEx(hook);
     }
     Ok(())
 }
 
-/// Check if a virtual key (e.g. VK_CONTROL, VK_SHIFT) is currently held.
+/// Check if a modifier key is currently held (e.g. VK_CONTROL).
 pub fn is_modifier_down(vk: u32) -> bool {
     unsafe { GetAsyncKeyState(vk as i32) < 0 }
 }
 
-/// Common Windows virtual-key codes we support in config.
 pub mod vk {
     pub const VK_LSHIFT: u32 = 0xA0;
     pub const VK_RSHIFT: u32 = 0xA1;
@@ -87,13 +86,11 @@ pub mod vk {
     pub const VK_INSERT: u32 = 0x2D;
 }
 
-/// Parse a user-config key name ("F4", "VK_F4", "A", "1", "Space", ...)
-/// into its virtual-key code. Returns None if unknown.
+/// Parse a key name ("F4", "A", "Space", …) into its virtual-key code.
 pub fn parse_key_name(name: &str) -> Option<u32> {
     let n = name.trim().to_uppercase();
     let n = n.strip_prefix("VK_").unwrap_or(&n);
 
-    // F1..F24
     if n.starts_with('F') {
         if let Ok(num) = n[1..].parse::<u32>() {
             if (1..=24).contains(&num) {
@@ -101,16 +98,11 @@ pub fn parse_key_name(name: &str) -> Option<u32> {
             }
         }
     }
-    // A..Z
     let bytes = n.as_bytes();
     if bytes.len() == 1 {
         let c = bytes[0];
-        if c.is_ascii_uppercase() {
-            return Some(c as u32);
-        }
-        if c.is_ascii_digit() {
-            return Some(c as u32);
-        }
+        if c.is_ascii_uppercase() { return Some(c as u32); }
+        if c.is_ascii_digit() { return Some(c as u32); }
     }
 
     match n {
@@ -129,7 +121,7 @@ pub fn parse_key_name(name: &str) -> Option<u32> {
     }
 }
 
-/// Map a VKey code (A, 0-9, F1-F24, named keys) to its display name.
+/// Virtual-key code to human-readable name.
 pub fn vk_display(vk_code: u32) -> String {
     let c = char::from_u32(vk_code);
     if let Some(c) = c {
