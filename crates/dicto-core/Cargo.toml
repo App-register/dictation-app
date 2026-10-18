@@ -12,7 +12,7 @@ cpal = "0.15"
 whisper-cpp-plus = "0.1"
 
 # Keyboard simulation (paste)
-enigo = { version = "0.2", features = ["clipboard"] }
+enigo = "0.2"
 
 # Serialization for config/dictionary
 serde = { version = "1", features = ["derive"] }
