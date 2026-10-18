@@ -21,7 +21,7 @@ toml = "0.8"
 
 # Logging
 log = "0.4"
-simple-logger = "4"
+simple_logger = "4"
 
 # Error handling
 thiserror = "1"
