@@ -61,7 +61,7 @@ pub fn run_keyboard_listener<F: FnMut(bool, u32) + Send + 'static>(
 
 /// Check if a virtual key (e.g. VK_CONTROL, VK_SHIFT) is currently held.
 pub fn is_modifier_down(vk: u32) -> bool {
-    unsafe { GetAsyncKeyState(vk as i32) & 0x8000 != 0 }
+    unsafe { GetAsyncKeyState(vk as i32) < 0 }
 }
 
 /// Common Windows virtual-key codes we support in config.
