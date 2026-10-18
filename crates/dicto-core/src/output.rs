@@ -1,7 +1,5 @@
-use enigo::{Direction, Enigo, Key, Settings};
-use winapi::shared::minwindef::NULL;
-use winapi::um::winbase::{GlobalAlloc, GlobalLock, GlobalUnlock};
-use winapi::um::winnt::GMEM_MOVEABLE;
+use enigo::{Direction, Enigo, Keyboard, Key, Settings};
+use winapi::um::winbase::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
 use winapi::um::winuser::{
     CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData, CF_UNICODETEXT,
 };
@@ -34,7 +32,7 @@ impl OutputController {
 
     fn set_clipboard(&self, text: &str) -> Result<(), String> {
         unsafe {
-            if OpenClipboard(NULL) == 0 {
+            if OpenClipboard(std::ptr::null_mut()) == 0 {
                 return Err("Failed to open clipboard".into());
             }
             if EmptyClipboard() == 0 {
