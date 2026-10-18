@@ -1,11 +1,13 @@
 use native_windows_gui as nwg;
+use winapi::um::winuser::{
+    WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT,
+};
 
 /// Recording overlay — transparent, always-on-top, click-through.
 pub struct RecordingOverlay {
     window: nwg::Window,
     text_label: nwg::Label,
     cancel_button: nwg::Button,
-    visible: bool,
 }
 
 impl RecordingOverlay {
@@ -16,81 +18,54 @@ impl RecordingOverlay {
 
         nwg::Window::builder()
             .flags(nwg::WindowFlags::POPUP | nwg::WindowFlags::VISIBLE)
-            .size((500, 100))
+            // Layered + click-through + no taskbar entry + never activates
+            .ex_flags(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)
+            .topmost(true)
+            .size((420, 90))
             .position((100, 100))
             .title("")
             .build(&mut window)?;
 
-        // Extended styles: transparent, click-through, tool window, no activation
-        unsafe {
-            let hwnd: winapi::shared::windef::HWND = std::mem::transmute(
-                window.handle.0
-            );
-            let ex = winapi::um::winuser::GetWindowLongW(hwnd, winapi::um::winuser::GWL_EXSTYLE)
-                | winapi::um::winuser::WS_EX_LAYERED
-                | winapi::um::winuser::WS_EX_TRANSPARENT
-                | winapi::um::winuser::WS_EX_TOOLWINDOW
-                | winapi::um::winuser::WS_EX_NOACTIVATE;
-            winapi::um::winuser::SetWindowLongW(hwnd, winapi::um::winuser::GWL_EXSTYLE, ex);
-            winapi::um::winuser::SetLayeredWindowAttributes(hwnd, 0, 220, winapi::um::winuser::LWA_ALPHA);
-        }
-
         nwg::Label::builder()
-            .text("🎤 Press hotkey and speak...")
-            .font_size(18)
+            .text("Press the hotkey and speak…")
+            .size((380, 40))
+            .position((10, 5))
             .parent(&window)
             .build(&mut text_label)?;
 
         nwg::Button::builder()
-            .text("✕")
+            .text("Cancel")
+            .size((60, 24))
+            .position((350, 55))
             .parent(&window)
             .build(&mut cancel_button)?;
-
-        nwg::GridLayout::builder()
-            .parent(&window)
-            .spacing(4)
-            .child(0, 0, &text_label)
-            .child_item(nwg::GridLayoutItem::new(&cancel_button, 0, 1, 1, 1))
-            .build()?;
 
         Ok(Self {
             window,
             text_label,
             cancel_button,
-            visible: false,
         })
     }
 
-    pub fn show(&mut self) {
-        if !self.visible {
-            nwg::show_window(&self.window);
-            self.visible = true;
-        }
+    pub fn show(&self) {
+        self.window.set_visible(true);
     }
 
-    pub fn hide(&mut self) {
-        if self.visible {
-            nwg::hide_window(&self.window);
-            self.visible = false;
-        }
+    pub fn hide(&self) {
+        self.window.set_visible(false);
     }
 
     pub fn update_text(&self, text: &str) {
         self.text_label.set_text(text);
-    }
-
-    pub fn is_visible(&self) -> bool {
-        self.visible
+        self.window.invalidate();
     }
 
     pub fn set_position(&self, x: i32, y: i32) {
-        nwg::set_window_pos(&self.window, x, y);
+        self.window.set_position(x, y);
     }
 
     pub fn on_cancel<F: Fn() + 'static>(&self, callback: F) {
-        let clb = nwg::Event::OnButtonClick(
-            nwg::EventHandler::new(move |_, _, _| callback())
-        );
+        let clb = nwg::EventHandler::new(callback);
         nwg::bind_event_handler(&self.cancel_button.handle, clb);
     }
 }

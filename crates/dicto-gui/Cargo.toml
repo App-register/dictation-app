@@ -2,19 +2,23 @@
 name = "dicto-gui"
 version = "0.1.0"
 edition = "2021"
-description = "Windows-native GUI: settings + overlay + tray"
+description = "Windows-native GUI: settings + overlay + hotkey"
 
 [dependencies]
 dicto-core = { path = "../dicto-core" }
 
 # Windows-native GUI (zero deps, ultra-light)
-native-windows-gui = { version = "1.0", features = ["frame", "listbox"] }
-
-# Global hotkeys on Windows
-win-hotkeys = "0.5"
+native-windows-gui = "1.0"
 
 log = "0.4"
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-winapi = { version = "0.3", features = ["winuser", "windef"] }
+winapi = { version = "0.3", features = [
+    "winuser",
+    "windef",
+    "minwindef",
+    "ntdef",
+    "libloaderapi",
+    "winbase",
+] }
