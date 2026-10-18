@@ -1,4 +1,5 @@
 use native_windows_gui as nwg;
+use std::cell::RefCell;
 use winapi::um::winuser::{
     WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT,
 };
@@ -8,6 +9,7 @@ pub struct RecordingOverlay {
     window: nwg::Window,
     text_label: nwg::Label,
     cancel_button: nwg::Button,
+    cancel_handler: RefCell<Option<nwg::EventHandler>>,
 }
 
 impl RecordingOverlay {
@@ -44,6 +46,7 @@ impl RecordingOverlay {
             window,
             text_label,
             cancel_button,
+            cancel_handler: RefCell::new(None),
         })
     }
 
@@ -65,7 +68,14 @@ impl RecordingOverlay {
     }
 
     pub fn on_cancel<F: Fn() + 'static>(&self, callback: F) {
-        let clb = nwg::EventHandler::new(callback);
-        nwg::bind_event_handler(&self.cancel_button.handle, clb);
+        let handler = nwg::full_bind_event_handler(
+            &self.cancel_button.handle,
+            move |evt: nwg::Event, _d: Option<&nwg::EventData>, _h: nwg::ControlHandle| {
+                if matches!(evt, nwg::Event::OnButtonClick) {
+                    callback();
+                }
+            },
+        );
+        *self.cancel_handler.borrow_mut() = Some(handler);
     }
 }

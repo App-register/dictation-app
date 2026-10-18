@@ -113,7 +113,7 @@ pub fn parse_key_name(name: &str) -> Option<u32> {
         }
     }
 
-    match n.as_str() {
+    match n {
         "SPACE" => Some(vk::VK_SPACE),
         "RETURN" | "ENTER" => Some(vk::VK_RETURN),
         "TAB" => Some(vk::VK_TAB),
