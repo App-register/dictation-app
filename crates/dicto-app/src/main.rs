@@ -1,6 +1,7 @@
 use dicto_core::{AudioCapture, Config, Dictionary, FormattingEngine, OutputController, SttEngine};
 use dicto_gui::hook;
 use dicto_gui::{AppState, RecordingOverlay, SettingsWindow};
+use native_windows_gui as nwg;
 use nwg::NativeUi;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
