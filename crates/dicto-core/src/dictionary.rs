@@ -29,9 +29,10 @@ impl Dictionary {
     }
 
     pub fn save(&self) -> std::io::Result<()> {
-        let dir = Self::path().parent().unwrap();
+        let path = Self::path();
+        let dir = path.parent().unwrap();
         std::fs::create_dir_all(dir)?;
-        std::fs::write(Self::path(), serde_json::to_string_pretty(self)?)
+        std::fs::write(path, serde_json::to_string_pretty(self)?)
     }
 
     /// Apply dictionary to raw text: word-by-word replacement.

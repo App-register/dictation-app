@@ -67,7 +67,7 @@ impl AudioCapture {
 
         let buffer = self.buffer.clone();
         let is_recording = self.is_recording.clone();
-        let err_ch = std::sync::mpsc::channel();
+        let (err_tx, _err_rx) = std::sync::mpsc::channel();
 
         let stream = self.device
             .build_input_stream(
@@ -83,7 +83,7 @@ impl AudioCapture {
                     }
                 },
                 move |err| {
-                    let _ = err_ch.send(err);
+                    let _ = err_tx.send(err);
                 },
                 None, // timeout
             )
