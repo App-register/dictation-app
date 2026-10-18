@@ -70,7 +70,7 @@ impl RecordingOverlay {
     pub fn on_cancel<F: Fn() + 'static>(&self, callback: F) {
         let handler = nwg::full_bind_event_handler(
             &self.cancel_button.handle,
-            move |evt: nwg::Event, _d: Option<&nwg::EventData>, _h: nwg::ControlHandle| {
+            move |evt, _d, _h| {
                 if matches!(evt, nwg::Event::OnButtonClick) {
                     callback();
                 }
