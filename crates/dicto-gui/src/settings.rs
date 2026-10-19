@@ -315,7 +315,7 @@ mod settings_ui {
             let cap = ui.cap_state.clone();
             let evt_ui = Rc::downgrade(&ui.inner);
 
-            let handle_events = move |evt, _d, handle| {
+            let handle_events = move |evt, _d: Option<&nwg::EventData>, handle| {
                 if let Some(ui) = evt_ui.upgrade() {
                     match evt {
                         E::OnWindowClose if handle == ui.window.handle => nwg::stop_thread_dispatch(),
