@@ -40,19 +40,18 @@ impl AudioCapture {
         };
 
         // Use the device's native configuration — guaranteed supported.
-                let supported = device
-                    .default_input_config()
-                    .map_err(|e| format!("No default config: {}", e))?;
+        let supported = device
+            .default_input_config()
+            .map_err(|e| format!("No default config: {}", e))?;
 
-                // Minimum supported sample rate, never below 8 kHz (resampled to 16k later).
-                let rate = supported.min_sample_rate().max(cpal::SampleRate(8000));
-                let stream_config = StreamConfig {
-                    channels: supported.channels(),
-                    sample_rate: rate,
-                    buffer_size: cpal::BufferSize::Default,
-                };
+        let rate = supported.sample_rate.max(cpal::SampleRate(8000));
+        let stream_config = StreamConfig {
+            channels: supported.channels,
+            sample_rate: rate,
+            buffer_size: cpal::BufferSize::Default,
+        };
 
-                Ok(Self {
+        Ok(Self {
             device,
             device_config: stream_config,
             buffer: Arc::new(Mutex::new(Vec::with_capacity(16000 * 30))),
