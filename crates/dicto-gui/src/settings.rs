@@ -154,6 +154,7 @@ impl SettingsWindow {
     fn start_capture(&self) {
         *self.cap_state.borrow_mut() = true;
         self.capture_btn.set_text("Press a key…");
+        self.window.set_focus();
     }
 }
 
@@ -181,10 +182,10 @@ mod settings_ui {
             // === GENERAL ===
             nwg::Frame::builder()
                 .size((490, 80)).position((15, 10)).parent(&data.window).build(&mut data._general)?;
+            let mut lbl = nwg::Label::default();
             nwg::Label::builder().size((100,16)).position((22,13)).text("General").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
-            let mut lbl = nwg::Label::default();
             nwg::Label::builder().size((60,20)).position((25,30)).text("Language:").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
