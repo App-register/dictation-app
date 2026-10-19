@@ -11,12 +11,6 @@ pub struct SettingsWindow {
     pub window: nwg::Window,
 
     // Frames (section containers)
-    _general: nwg::Frame,
-    _hotkey: nwg::Frame,
-    _overlay: nwg::Frame,
-    _formatting: nwg::Frame,
-    _output: nwg::Frame,
-    _dictionary: nwg::Frame,
 
     /// Keep labels alive (dropping overwrites destroys HWND, causes crash)
     labels: Vec<nwg::Label>,
@@ -78,9 +72,6 @@ impl SettingsWindow {
             cap_state: Rc::new(RefCell::new(false)),
             labels: Vec::new(),
             window: Default::default(),
-            _general: Default::default(), _hotkey: Default::default(),
-            _overlay: Default::default(), _formatting: Default::default(),
-            _output: Default::default(), _dictionary: Default::default(),
             lang_combo: Default::default(), model_combo: Default::default(),
             mic_combo: Default::default(),
             ctrl_cb: Default::default(), alt_cb: Default::default(),
@@ -180,8 +171,6 @@ mod settings_ui {
                 .build(&mut data.window)?;
 
             // === GENERAL ===
-            nwg::Frame::builder()
-                .size((490, 80)).position((15, 10)).parent(&data.window).build(&mut data._general)?;
             let mut lbl = nwg::Label::default();
             nwg::Label::builder().size((100,16)).position((22,13)).text("General").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
@@ -208,8 +197,6 @@ mod settings_ui {
                 .collection(items).build(&mut data.mic_combo)?;
 
             // === HOTKEY ===
-            nwg::Frame::builder()
-                .size((490, 100)).position((15, 95))
                 .parent(&data.window).build(&mut data._hotkey)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Hotkey").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
@@ -235,8 +222,6 @@ mod settings_ui {
                 .collection(vec!["push-to-talk".into(),"toggle-to-talk".into()]).build(&mut data.mode_combo)?;
 
             // === OVERLAY ===
-            nwg::Frame::builder()
-                .size((490, 70)).position((15, 200))
                 .parent(&data.window).build(&mut data._overlay)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Overlay").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
@@ -261,8 +246,6 @@ mod settings_ui {
             nwg::TextInput::builder().flags(nwg::TextInputFlags::NUMBER).size((40,24)).position((365,218)).text("16").parent(&data.window).build(&mut data.ov_font)?;
 
             // === FORMATTING ===
-            nwg::Frame::builder()
-                .size((490, 80)).position((15, 275))
                 .parent(&data.window).build(&mut data._formatting)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Formatting Rules").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
@@ -276,8 +259,6 @@ mod settings_ui {
             nwg::TextInput::builder().flags(nwg::TextInputFlags::NUMBER).size((50,24)).position((340,320)).text("3").parent(&data.window).build(&mut data.cap_thresh)?;
 
             // === OUTPUT ===
-            nwg::Frame::builder()
-                .size((490, 55)).position((15, 360))
                 .parent(&data.window).build(&mut data._output)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Output").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
@@ -285,8 +266,6 @@ mod settings_ui {
             nwg::CheckBox::builder().size((250,22)).position((25,380)).text("Auto-paste to active window").parent(&data.window).build(&mut data.paste_cb)?;
 
             // === DICTIONARY ===
-            nwg::Frame::builder()
-                .size((490, 165)).position((15, 420))
                 .parent(&data.window).build(&mut data._dictionary)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Dictionary").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
