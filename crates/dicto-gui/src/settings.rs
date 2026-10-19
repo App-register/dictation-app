@@ -315,7 +315,7 @@ mod settings_ui {
             let cap = ui.cap_state.clone();
             let evt_ui = Rc::downgrade(&ui.inner);
 
-            let handle_events = move |evt, _d: Option<&nwg::EventData>, handle| {
+            let handle_events = move |evt, evt_data, handle| {
                 if let Some(ui) = evt_ui.upgrade() {
                     match evt {
                         E::OnWindowClose if handle == ui.window.handle => nwg::stop_thread_dispatch(),
@@ -350,7 +350,7 @@ mod settings_ui {
                         }
                         E::OnKeyPress => {
                             if *cap.borrow() {
-                                let vk = _d.map(|d| d.on_key()).unwrap_or(0);
+                                let vk = evt_data.on_key();
                                 if vk != 0 {
                                     ui.key_input.set_text(&crate::hook::vk_display(vk));
                                     *cap.borrow_mut() = false;
