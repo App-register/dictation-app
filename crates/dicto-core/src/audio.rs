@@ -44,10 +44,11 @@ impl AudioCapture {
             .default_input_config()
             .map_err(|e| format!("No default config: {}", e))?;
 
-        let rate = supported.sample_rate.max(cpal::SampleRate(8000));
+        // config() returns a &StreamConfig that is guaranteed to work
+        let native = supported.config();
         let stream_config = StreamConfig {
-            channels: supported.channels,
-            sample_rate: rate,
+            channels: native.channels,
+            sample_rate: native.sample_rate,
             buffer_size: cpal::BufferSize::Default,
         };
 
