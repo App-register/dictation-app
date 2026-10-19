@@ -19,6 +19,9 @@ pub struct SettingsWindow {
     _output: nwg::Frame,
     _dictionary: nwg::Frame,
 
+    /// Keep labels alive (dropping overwrites destroys HWND, causes crash)
+    labels: Vec<nwg::Label>,
+
     // General
     lang_combo: nwg::ComboBox<String>,
     model_combo: nwg::ComboBox<String>,
@@ -74,6 +77,7 @@ impl SettingsWindow {
             config, dict,
             dict_entries: Rc::new(RefCell::new(entries)),
             cap_state: Rc::new(RefCell::new(false)),
+            labels: Vec::new(),
             window: Default::default(),
             _general: Default::default(), _hotkey: Default::default(),
             _overlay: Default::default(), _formatting: Default::default(),
@@ -182,14 +186,20 @@ mod settings_ui {
 
             let mut lbl = nwg::Label::default();
             nwg::Label::builder().size((60,20)).position((25,30)).text("Language:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::ComboBox::builder().size((110,24)).position((90,28)).parent(&data.window)
                 .collection(vec!["auto".into(),"en".into(),"fr".into()]).build(&mut data.lang_combo)?;
 
             nwg::Label::builder().size((45,20)).position((215,30)).text("Model:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::ComboBox::builder().size((100,24)).position((260,28)).parent(&data.window)
                 .collection(vec!["tiny".into(),"base".into()]).build(&mut data.model_combo)?;
 
             nwg::Label::builder().size((70,20)).position((25,55)).text("Microphone:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             let devs = dicto_core::audio::AudioCapture::list_devices();
             let mut items = vec!["[Default]".into()];
             for (_, n) in &devs { items.push(n.clone()); }
@@ -202,16 +212,22 @@ mod settings_ui {
                 .parent(&data.window).build(&mut data._hotkey)?;
 
             nwg::Label::builder().size((60,20)).position((25,115)).text("Modifiers:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::CheckBox::builder().size((50,22)).position((90,113)).text("Ctrl").parent(&data.window).build(&mut data.ctrl_cb)?;
             nwg::CheckBox::builder().size((50,22)).position((145,113)).text("Alt").parent(&data.window).build(&mut data.alt_cb)?;
             nwg::CheckBox::builder().size((60,22)).position((200,113)).text("Shift").parent(&data.window).build(&mut data.shift_cb)?;
             nwg::CheckBox::builder().size((50,22)).position((265,113)).text("Win").parent(&data.window).build(&mut data.win_cb)?;
 
             nwg::Label::builder().size((25,20)).position((25,140)).text("Key:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::TextInput::builder().size((60,24)).position((55,138)).text("F4").parent(&data.window).build(&mut data.key_input)?;
             nwg::Button::builder().size((80,26)).position((120,138)).text("Capture").parent(&data.window).build(&mut data.capture_btn)?;
 
             nwg::Label::builder().size((40,20)).position((215,140)).text("Mode:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::ComboBox::builder().size((130,24)).position((260,138)).parent(&data.window)
                 .collection(vec!["push-to-talk".into(),"toggle-to-talk".into()]).build(&mut data.mode_combo)?;
 
@@ -221,14 +237,22 @@ mod settings_ui {
                 .parent(&data.window).build(&mut data._overlay)?;
 
             nwg::Label::builder().size((35,20)).position((25,220)).text("Show:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::ComboBox::builder().size((100,24)).position((65,218)).parent(&data.window)
                 .collection(vec!["recording".into(),"always".into(),"never".into()]).build(&mut data.ov_mode_combo)?;
 
             nwg::Label::builder().size((20,20)).position((180,220)).text("X:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::TextInput::builder().flags(nwg::TextInputFlags::NUMBER).size((50,24)).position((195,218)).text("100").parent(&data.window).build(&mut data.ov_x)?;
             nwg::Label::builder().size((20,20)).position((255,220)).text("Y:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::TextInput::builder().flags(nwg::TextInputFlags::NUMBER).size((50,24)).position((270,218)).text("100").parent(&data.window).build(&mut data.ov_y)?;
             nwg::Label::builder().size((35,20)).position((330,220)).text("Font:").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::TextInput::builder().flags(nwg::TextInputFlags::NUMBER).size((40,24)).position((365,218)).text("16").parent(&data.window).build(&mut data.ov_font)?;
 
             // === FORMATTING ===
@@ -240,6 +264,8 @@ mod settings_ui {
             nwg::CheckBox::builder().size((150,22)).position((280,295)).text("Text-to-number").parent(&data.window).build(&mut data.num_cb)?;
             nwg::CheckBox::builder().size((120,22)).position((25,322)).text("Trailing space").parent(&data.window).build(&mut data.trail_cb)?;
             nwg::Label::builder().size((180,20)).position((160,324)).text("Auto-cap threshold (words):").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::TextInput::builder().flags(nwg::TextInputFlags::NUMBER).size((50,24)).position((340,320)).text("3").parent(&data.window).build(&mut data.cap_thresh)?;
 
             // === OUTPUT ===
