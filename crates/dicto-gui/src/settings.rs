@@ -197,7 +197,6 @@ mod settings_ui {
                 .collection(items).build(&mut data.mic_combo)?;
 
             // === HOTKEY ===
-                .parent(&data.window).build(&mut data._hotkey)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Hotkey").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
@@ -222,7 +221,6 @@ mod settings_ui {
                 .collection(vec!["push-to-talk".into(),"toggle-to-talk".into()]).build(&mut data.mode_combo)?;
 
             // === OVERLAY ===
-                .parent(&data.window).build(&mut data._overlay)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Overlay").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
@@ -246,7 +244,6 @@ mod settings_ui {
             nwg::TextInput::builder().flags(nwg::TextInputFlags::NUMBER).size((40,24)).position((365,218)).text("16").parent(&data.window).build(&mut data.ov_font)?;
 
             // === FORMATTING ===
-                .parent(&data.window).build(&mut data._formatting)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Formatting Rules").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
@@ -259,14 +256,12 @@ mod settings_ui {
             nwg::TextInput::builder().flags(nwg::TextInputFlags::NUMBER).size((50,24)).position((340,320)).text("3").parent(&data.window).build(&mut data.cap_thresh)?;
 
             // === OUTPUT ===
-                .parent(&data.window).build(&mut data._output)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Output").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
             nwg::CheckBox::builder().size((250,22)).position((25,380)).text("Auto-paste to active window").parent(&data.window).build(&mut data.paste_cb)?;
 
             // === DICTIONARY ===
-                .parent(&data.window).build(&mut data._dictionary)?;
             nwg::Label::builder().size((100,16)).position((22,12)).text("Dictionary").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
