@@ -181,8 +181,9 @@ mod settings_ui {
             // === GENERAL ===
             nwg::Frame::builder()
                 .size((490, 80)).position((15, 10)).parent(&data.window).build(&mut data._general)?;
-            data._general.set_text("General");
-
+            nwg::Label::builder().size((100,16)).position((22,13)).text("General").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             let mut lbl = nwg::Label::default();
             nwg::Label::builder().size((60,20)).position((25,30)).text("Language:").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
@@ -209,8 +210,9 @@ mod settings_ui {
             nwg::Frame::builder()
                 .size((490, 100)).position((15, 95))
                 .parent(&data.window).build(&mut data._hotkey)?;
-            data._hotkey.set_text("Hotkey");
-
+            nwg::Label::builder().size((100,16)).position((22,12)).text("Hotkey").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::Label::builder().size((60,20)).position((25,115)).text("Modifiers:").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
@@ -235,8 +237,9 @@ mod settings_ui {
             nwg::Frame::builder()
                 .size((490, 70)).position((15, 200))
                 .parent(&data.window).build(&mut data._overlay)?;
-            data._overlay.set_text("Overlay");
-
+            nwg::Label::builder().size((100,16)).position((22,12)).text("Overlay").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::Label::builder().size((35,20)).position((25,220)).text("Show:").parent(&data.window).build(&mut lbl)?;
             data.labels.push(lbl);
             lbl = nwg::Label::default();
@@ -260,8 +263,9 @@ mod settings_ui {
             nwg::Frame::builder()
                 .size((490, 80)).position((15, 275))
                 .parent(&data.window).build(&mut data._formatting)?;
-            data._formatting.set_text("Formatting Rules");
-
+            nwg::Label::builder().size((100,16)).position((22,12)).text("Formatting Rules").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::CheckBox::builder().size((240,22)).position((25,295)).text("Space before ? and ! (French)").parent(&data.window).build(&mut data.space_cb)?;
             nwg::CheckBox::builder().size((150,22)).position((280,295)).text("Text-to-number").parent(&data.window).build(&mut data.num_cb)?;
             nwg::CheckBox::builder().size((120,22)).position((25,322)).text("Trailing space").parent(&data.window).build(&mut data.trail_cb)?;
@@ -274,16 +278,18 @@ mod settings_ui {
             nwg::Frame::builder()
                 .size((490, 55)).position((15, 360))
                 .parent(&data.window).build(&mut data._output)?;
-            data._output.set_text("Output");
-
+            nwg::Label::builder().size((100,16)).position((22,12)).text("Output").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::CheckBox::builder().size((250,22)).position((25,380)).text("Auto-paste to active window").parent(&data.window).build(&mut data.paste_cb)?;
 
             // === DICTIONARY ===
             nwg::Frame::builder()
                 .size((490, 165)).position((15, 420))
                 .parent(&data.window).build(&mut data._dictionary)?;
-            data._dictionary.set_text("Dictionary");
-
+            nwg::Label::builder().size((100,16)).position((22,12)).text("Dictionary").parent(&data.window).build(&mut lbl)?;
+            data.labels.push(lbl);
+            lbl = nwg::Label::default();
             nwg::ListBox::builder().size((260,140)).position((25,440)).parent(&data.window).build(&mut data.dict_list)?;
             nwg::TextInput::builder().size((120,24)).position((300,440)).text("Word").parent(&data.window).build(&mut data.word_input)?;
             nwg::TextInput::builder().size((120,24)).position((300,470)).text("Replacement").parent(&data.window).build(&mut data.repl_input)?;
@@ -343,10 +349,7 @@ mod settings_ui {
                         }
                         E::OnKeyPress => {
                             if *cap.borrow() {
-                                let vk = match _d {
-                                    Some(nwg::EventData::OnKey(v)) => *v,
-                                    _ => 0,
-                                };
+                                let vk = _d.map(|d| d.on_key()).unwrap_or(0);
                                 if vk != 0 {
                                     ui.key_input.set_text(&crate::hook::vk_display(vk));
                                     *cap.borrow_mut() = false;
