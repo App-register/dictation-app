@@ -29,6 +29,8 @@ thiserror = "1"
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 
+# For auto-downloading Whisper models
+ureq = "2"
 # Ring buffer for audio capture
 regex = "1"
 num_cpus = "1"
