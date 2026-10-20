@@ -3,14 +3,47 @@ use dicto_gui::hook;
 use dicto_gui::{AppState, RecordingOverlay, SettingsWindow};
 use native_windows_gui as nwg;
 use nwg::NativeUi;
+use std::fs::OpenOptions;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 fn main() {
-    simple_logger::SimpleLogger::new()
-        .with_level(log::LevelFilter::Info)
-        .init()
+    // Log to a file in the config directory + terminal
+    let log_path = Config::config_dir().join("dicto.log");
+    if let Some(parent) = log_path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let log_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(&log_path)
         .ok();
+
+    let mut loggers: Vec<Box<dyn simplelog::SharedLogger>> = Vec::new();
+
+    // Terminal logger (stderr)
+    let term_config = simplelog::ConfigBuilder::new()
+        .set_time_format_rfc3339()
+        .build();
+    loggers.push(simplelog::TermLogger::new(
+        simplelog::LevelFilter::Info,
+        term_config.clone(),
+        simplelog::TerminalMode::Stderr,
+        simplelog::ColorChoice::Auto,
+    ));
+
+    // File logger
+    if let Some(file) = log_file {
+        loggers.push(simplelog::WriteLogger::new(
+            simplelog::LevelFilter::Debug,
+            term_config,
+            file,
+        ));
+    }
+
+    simplelog::CombinedLogger::init(loggers)
+        .unwrap_or_else(|_| simple_logger::SimpleLogger::new().with_level(log::LevelFilter::Info).init().ok());
 
     log::info!("Dicto is starting...");
 

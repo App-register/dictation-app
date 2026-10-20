@@ -63,6 +63,7 @@ impl SttEngine {
 
         Ok(result.text.trim().to_string())
     }
+    }
 
     /// Get the filesystem path for a named model ("tiny" or "base").
 pub fn get_model_path(size: &str) -> String {
