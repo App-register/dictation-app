@@ -295,6 +295,35 @@ mod settings_ui {
                         E::OnWindowClose if handle == ui.window.handle => nwg::stop_thread_dispatch(),
                         E::OnButtonClick => {
                             if handle == ui.save_btn.handle {
+                                // Check if selected model is on disk
+                                let size = ui.read_config().model_size;
+                                if !dicto_core::stt::model_exists(&size) {
+                                    let mb = if size == "tiny" { "75" } else { "142" };
+                                    let ask = nwg::modal_yes_no_message(
+                                        &ui.window,
+                                        "Model not found",
+                                        &format!(
+                                            "The \"{}\" model is not downloaded ({} MB).\n\nDownload it now?",
+                                            size, mb
+                                        ),
+                                    );
+                                    if ask {
+                                        ui.capture_btn.set_text(&format!("Downloading {}…", size));
+                                        match dicto_core::stt::download_model_file(&size) {
+                                            Ok(_) => {}
+                                            Err(e) => {
+                                                let _ = nwg::modal_info_message(
+                                                    &ui.window,
+                                                    "Download failed",
+                                                    &format!("Failed to download model:\n{}", e),
+                                                );
+                                                return;
+                                            }
+                                        }
+                                    } else {
+                                        return; // don't close, let user change selection
+                                    }
+                                }
                                 let cfg = ui.read_config();
                                 { *ui.config.lock().unwrap() = cfg.clone(); }
                                 let _ = cfg.save();

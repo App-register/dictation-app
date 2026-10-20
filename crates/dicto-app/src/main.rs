@@ -67,7 +67,7 @@ fn dictation_loop(cfg: Config, dict: Dictionary) {
     let ov_y = cfg.overlay_y;
     let mic_name = cfg.mic_name.clone();
     let language = cfg.language.clone();
-    let model_path = SttEngine::resolve_model_path(&cfg.model_size);
+    let model_path = dicto_core::stt::get_model_path(&cfg.model_size);
     let auto_paste = cfg.auto_paste;
 
     let mut stt = SttEngine::new(&model_path, &language);
