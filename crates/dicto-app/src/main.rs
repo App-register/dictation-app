@@ -42,8 +42,11 @@ fn main() {
         ));
     }
 
-    simplelog::CombinedLogger::init(loggers)
-        .unwrap_or_else(|_| simple_logger::SimpleLogger::new().with_level(log::LevelFilter::Info).init().ok());
+    let _ = simplelog::CombinedLogger::init(loggers);
+    simple_logger::SimpleLogger::new()
+        .with_level(log::LevelFilter::Info)
+        .init()
+        .ok();
 
     log::info!("Dicto is starting...");
 
