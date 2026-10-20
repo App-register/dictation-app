@@ -63,7 +63,6 @@ impl SttEngine {
 
         Ok(result.text.trim().to_string())
     }
-    }
 
     /// Get the filesystem path for a named model ("tiny" or "base").
 pub fn get_model_path(size: &str) -> String {
@@ -116,7 +115,6 @@ pub fn download_model_file(size: &str) -> std::result::Result<(), String> {
 /// Check if a named model file exists on disk.
 pub fn model_exists(size: &str) -> bool {
     std::path::Path::new(&get_model_path(size)).exists()
-}
 }
 
 fn num_cpus() -> usize {
