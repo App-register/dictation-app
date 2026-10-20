@@ -299,15 +299,14 @@ mod settings_ui {
                                 let size = ui.read_config().model_size;
                                 if !dicto_core::stt::model_exists(&size) {
                                     let mb = if size == "tiny" { "75" } else { "142" };
-                                    let ask = nwg::modal_yes_no_message(
-                                        &ui.window,
-                                        "Model not found",
-                                        &format!(
-                                            "The \"{}\" model is not downloaded ({} MB).\n\nDownload it now?",
-                                            size, mb
-                                        ),
-                                    );
-                                    if ask {
+                                    let params = nwg::MessageParams {
+                                        title: "Model not found",
+                                        content: &format!("The \"{}\" model is not downloaded ({} MB).\n\nDownload it now?", size, mb),
+                                        buttons: nwg::MessageButtons::YesNo,
+                                        icons: nwg::MessageIcons::Question,
+                                    };
+                                    let ask = nwg::modal_message(&ui.window, &params);
+                                    if ask == nwg::MessageChoice::Yes {
                                         ui.capture_btn.set_text(&format!("Downloading {}…", size));
                                         match dicto_core::stt::download_model_file(&size) {
                                             Ok(_) => {}
