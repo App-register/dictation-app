@@ -73,21 +73,6 @@ fn main() {
     let cfg = state.config.lock().unwrap().clone();
     let dict = state.dictionary.lock().unwrap().clone();
 
-    // ── Preload STT model now, not at first PTT press ──
-    {
-        let model_path = dicto_core::stt::get_model_path(&cfg.model_size);
-        if std::path::Path::new(&model_path).exists() {
-            log::info!("Preloading model: {} …", &model_path);
-            let model = std::time::Instant::now();
-            let mut stt = SttEngine::new(&model_path, &cfg.language);
-            stt.transcribe(&vec![0.0f32; 16000]).ok(); // warm-up inference
-            let elapsed = model.elapsed();
-            log::info!("Model loaded in {:?}", elapsed);
-        } else {
-            log::info!("Model not found at: {}", &model_path);
-        }
-    }
-
     // ── 2. Dictation engine (same thread, own NWG init for overlay) ──
     dictation_loop(cfg, dict);
 }
@@ -127,6 +112,16 @@ fn dictation_loop(cfg: Config, dict: Dictionary) {
     let mut output = OutputController::new(auto_paste);
     let mut capture: Option<AudioCapture> = None;
     let formatting = FormattingEngine::from_config(&cfg);
+
+    // Preload the STT model NOW (before hook install) — not at every PTT
+    if std::path::Path::new(&model_path).exists() {
+        log::info!("Preloading model …");
+        let t0 = std::time::Instant::now();
+        let _ = stt.transcribe(&vec![0.0f32; 16000]);
+        log::info!("Model loaded in {:?}", t0.elapsed());
+    } else {
+        log::warn!("Model file does not exist at: {}", model_path);
+    }
 
     // Raw pointer for overlay access inside the 'static closure
     let ov_ptr = &overlay as *const RecordingOverlay;

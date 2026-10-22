@@ -1,10 +1,7 @@
-use enigo::{Direction, Enigo, Keyboard, Key, Settings};
-use winapi::um::winbase::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_DDESHARE, GMEM_MOVEABLE};
-use winapi::um::winuser::{
-    CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData, CF_UNICODETEXT,
-};
+use enigo::{Enigo, Keyboard, Settings};
 
-/// Output controller: paste text to active window.
+/// Output controller: types text directly into the active window.
+/// No clipboard involved — avoids Murmure interference and clipboard crashes.
 pub struct OutputController {
     enigo: Enigo,
     auto_paste: bool,
@@ -17,59 +14,23 @@ impl OutputController {
         Self { enigo, auto_paste }
     }
 
-    /// Copy text to clipboard, then simulate Ctrl+V.
+    /// Type the text directly via simulated keystrokes (no clipboard).
     pub fn paste(&mut self, text: &str) -> Result<(), String> {
-        self.set_clipboard(text)?;
-        if self.auto_paste {
-            self.simulate_paste()?;
+        if !self.auto_paste {
+            return Ok(());
         }
-        Ok(())
-    }
+        // Release any potentially stuck modifiers
+        use enigo::{Direction, Key};
+        let _ = self.enigo.key(Key::Control, Direction::Release);
+        let _ = self.enigo.key(Key::Shift, Direction::Release);
+        let _ = self.enigo.key(Key::Alt, Direction::Release);
+        let _ = self.enigo.key(Key::Meta, Direction::Release);
+        std::thread::sleep(std::time::Duration::from_millis(10));
 
-    fn set_clipboard(&self, text: &str) -> Result<(), String> {
-        unsafe {
-            for attempt in 0..3 {
-                if OpenClipboard(std::ptr::null_mut()) == 0 {
-                    // Clipboard busy — wait and retry
-                    if attempt < 2 {
-                        std::thread::sleep(std::time::Duration::from_millis(100 * (attempt + 1)));
-                    }
-                    continue;
-                }
-                let _ = EmptyClipboard();
-
-                let wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
-                let size = wide.len() * 2;
-                // GMEM_DDESHARE is required for clipboard allocations
-                let h = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, size as usize);
-                if h.is_null() {
-                    CloseClipboard();
-                    return Err("GlobalAlloc failed".into());
-                }
-
-                let locked = GlobalLock(h) as *mut u16;
-                std::ptr::copy_nonoverlapping(wide.as_ptr(), locked, wide.len());
-                GlobalUnlock(h);
-
-                // SetClipboardData takes ownership of h — do NOT unlock afterward
-                if SetClipboardData(CF_UNICODETEXT, h).is_null() {
-                    CloseClipboard();
-                    return Err("SetClipboardData failed".into());
-                }
-
-                CloseClipboard();
-                return Ok(());
-            }
-        }
-        Err("Could not open clipboard after 3 attempts".into())
-    }
-
-    fn simulate_paste(&mut self) -> Result<(), String> {
+        // Type each character as keystrokes
         self.enigo
-            .key(Key::Control, Direction::Press)
-            .and_then(|_| self.enigo.key(Key::Unicode('v'), Direction::Click))
-            .and_then(|_| self.enigo.key(Key::Control, Direction::Release))
-            .map_err(|e| format!("Paste failed: {}", e))?;
+            .text(text)
+            .map_err(|e| format!("Failed to type text: {}", e))?;
         Ok(())
     }
 }
