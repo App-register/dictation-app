@@ -8,6 +8,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 fn main() {
+    // Enable detailed crash logs
+    std::env::set_var("RUST_BACKTRACE", "1");
     // Log to a file in the config directory + terminal
     let log_path = Config::config_dir().join("dicto.log");
     if let Some(parent) = log_path.parent() {
@@ -70,6 +72,21 @@ fn main() {
 
     let cfg = state.config.lock().unwrap().clone();
     let dict = state.dictionary.lock().unwrap().clone();
+
+    // ── Preload STT model now, not at first PTT press ──
+    {
+        let model_path = dicto_core::stt::get_model_path(&cfg.model_size);
+        if std::path::Path::new(&model_path).exists() {
+            log::info!("Preloading model: {} …", &model_path);
+            let model = std::time::Instant::now();
+            let mut stt = SttEngine::new(&model_path, &cfg.language);
+            stt.transcribe(&vec![0.0f32; 16000]).ok(); // warm-up inference
+            let elapsed = model.elapsed();
+            log::info!("Model loaded in {:?}", elapsed);
+        } else {
+            log::info!("Model not found at: {}", &model_path);
+        }
+    }
 
     // ── 2. Dictation engine (same thread, own NWG init for overlay) ──
     dictation_loop(cfg, dict);

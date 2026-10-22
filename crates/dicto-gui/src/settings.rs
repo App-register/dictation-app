@@ -307,10 +307,15 @@ mod settings_ui {
                                     };
                                     let ask = nwg::modal_message(&ui.window, &params);
                                     if ask == nwg::MessageChoice::Yes {
+                                        // Prevent re-entrant RefCell borrows — disable window
+                                        ui.window.set_enabled(false);
                                         ui.capture_btn.set_text(&format!("Downloading {}…", size));
                                         match dicto_core::stt::download_model_file(&size) {
-                                            Ok(_) => {}
+                                            Ok(_) => {
+                                                ui.window.set_enabled(true);
+                                            }
                                             Err(e) => {
+                                                ui.window.set_enabled(true);
                                                 let _ = nwg::modal_info_message(
                                                     &ui.window,
                                                     "Download failed",

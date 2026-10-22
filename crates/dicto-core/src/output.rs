@@ -1,5 +1,5 @@
 use enigo::{Direction, Enigo, Keyboard, Key, Settings};
-use winapi::um::winbase::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
+use winapi::um::winbase::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_DDESHARE, GMEM_MOVEABLE};
 use winapi::um::winuser::{
     CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData, CF_UNICODETEXT,
 };
@@ -17,58 +17,59 @@ impl OutputController {
         Self { enigo, auto_paste }
     }
 
-    /// Copy text to clipboard and paste into active window.
+    /// Copy text to clipboard, then simulate Ctrl+V.
     pub fn paste(&mut self, text: &str) -> Result<(), String> {
-        // 1. Set clipboard via winapi (fast, reliable)
         self.set_clipboard(text)?;
-
-        // 2. If auto-paste is on, simulate Ctrl+V
         if self.auto_paste {
             self.simulate_paste()?;
         }
-
         Ok(())
     }
 
     fn set_clipboard(&self, text: &str) -> Result<(), String> {
         unsafe {
-            if OpenClipboard(std::ptr::null_mut()) == 0 {
-                return Err("Failed to open clipboard".into());
-            }
-            if EmptyClipboard() == 0 {
+            for attempt in 0..3 {
+                if OpenClipboard(std::ptr::null_mut()) == 0 {
+                    // Clipboard busy — wait and retry
+                    if attempt < 2 {
+                        std::thread::sleep(std::time::Duration::from_millis(100 * (attempt + 1)));
+                    }
+                    continue;
+                }
+                let _ = EmptyClipboard();
+
+                let wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
+                let size = wide.len() * 2;
+                // GMEM_DDESHARE is required for clipboard allocations
+                let h = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, size as usize);
+                if h.is_null() {
+                    CloseClipboard();
+                    return Err("GlobalAlloc failed".into());
+                }
+
+                let locked = GlobalLock(h) as *mut u16;
+                std::ptr::copy_nonoverlapping(wide.as_ptr(), locked, wide.len());
+                GlobalUnlock(h);
+
+                // SetClipboardData takes ownership of h — do NOT unlock afterward
+                if SetClipboardData(CF_UNICODETEXT, h).is_null() {
+                    CloseClipboard();
+                    return Err("SetClipboardData failed".into());
+                }
+
                 CloseClipboard();
-                return Err("Failed to empty clipboard".into());
+                return Ok(());
             }
-
-            let wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
-            let size = wide.len() * 2;
-            let h = GlobalAlloc(GMEM_MOVEABLE, size as usize);
-            if h.is_null() {
-                CloseClipboard();
-                return Err("GlobalAlloc failed".into());
-            }
-
-            let locked = GlobalLock(h) as *mut u16;
-            std::ptr::copy_nonoverlapping(wide.as_ptr(), locked, wide.len());
-            GlobalUnlock(h);
-
-            if SetClipboardData(CF_UNICODETEXT, h).is_null() {
-                CloseClipboard();
-                return Err("SetClipboardData failed".into());
-            }
-
-            CloseClipboard();
         }
-        Ok(())
+        Err("Could not open clipboard after 3 attempts".into())
     }
 
     fn simulate_paste(&mut self) -> Result<(), String> {
-        self.enigo.key(Key::Control, Direction::Press)
-            .map_err(|e| format!("Key error: {}", e))?;
-        self.enigo.key(Key::Unicode('v'), Direction::Click)
-            .map_err(|e| format!("Key error: {}", e))?;
-        self.enigo.key(Key::Control, Direction::Release)
-            .map_err(|e| format!("Key error: {}", e))?;
+        self.enigo
+            .key(Key::Control, Direction::Press)
+            .and_then(|_| self.enigo.key(Key::Unicode('v'), Direction::Click))
+            .and_then(|_| self.enigo.key(Key::Control, Direction::Release))
+            .map_err(|e| format!("Paste failed: {}", e))?;
         Ok(())
     }
 }
