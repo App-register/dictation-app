@@ -10,9 +10,17 @@ type HookFn = Box<dyn FnMut(bool, u32) + 'static>;
 
 std::thread_local! {
     static CALLBACK: RefCell<Option<HookFn>> = const { RefCell::new(None) };
+    /// Guards against re-entrant hook calls (enigo.text() → SendInput → hook re-trigger)
+    static BUSY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
 unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    // Re-entrant guard: skip if we're already inside our own callback
+    if BUSY.get() {
+        return CallNextHookEx(std::ptr::null_mut(), code, wparam, lparam);
+    }
+    BUSY.set(true);
+
     if code >= 0 {
         let msg = wparam as u32;
         if msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYUP {
@@ -26,6 +34,7 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
             });
         }
     }
+    BUSY.set(false);
     CallNextHookEx(std::ptr::null_mut(), code, wparam, lparam)
 }
 

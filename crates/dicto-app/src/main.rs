@@ -10,8 +10,11 @@ use std::sync::Arc;
 fn main() {
     // Enable detailed crash logs
     std::env::set_var("RUST_BACKTRACE", "1");
-    // Log to a file in the config directory + terminal
+    // Log to a file at the exe root + config directory for debug
     let log_path = Config::config_dir().join("dicto.log");
+    let exe_log = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.join("dicto.log")));
     if let Some(parent) = log_path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -35,13 +38,25 @@ fn main() {
         simplelog::ColorChoice::Auto,
     ));
 
-    // File logger
+    // File loggers
     if let Some(file) = log_file {
         loggers.push(simplelog::WriteLogger::new(
             simplelog::LevelFilter::Debug,
-            term_config,
+            term_config.clone(),
             file,
         ));
+    }
+    // Also log to the exe directory (where dicto.exe lives)
+    if let Some(exe_path) = exe_log {
+        if let Ok(exe_file) = std::fs::OpenOptions::new()
+            .create(true).write(true).truncate(true).open(&exe_path)
+        {
+            loggers.push(simplelog::WriteLogger::new(
+                simplelog::LevelFilter::Debug,
+                term_config,
+                exe_file,
+            ));
+        }
     }
 
     let _ = simplelog::CombinedLogger::init(loggers);
